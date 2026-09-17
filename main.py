@@ -20,11 +20,11 @@ from apscheduler.triggers.cron import CronTrigger
 from config import config
 from handlers.commands import build_handlers
 from services.scheduler import run_daily_reminders
+from utils.logging_setup import get_log_path, setup_logging
 
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    level=logging.INFO,
-)
+# Configure logging before anything else logs, so startup messages are captured.
+setup_logging()
+
 logger = logging.getLogger(__name__)
 
 # Hour (24h, app timezone) at which the daily reminder scan runs.
@@ -49,6 +49,8 @@ def main() -> None:
 
     logger.info("Initializing database at %s", config.db_path)
     db.init_db()
+
+    logger.info("Bot log file: %s", get_log_path())
 
     app = (
         ApplicationBuilder()
