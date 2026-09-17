@@ -147,28 +147,37 @@ BOT_USERNAME=MyReminderBot          # имя бота (без @), для спр�
 DB_PATH=data/app.db                 # путь к файлу SQLite
 SCHEDULER_TIMEZONE=Europe/Moscow    # IANA-таймзона для "сегодня" и расписания
 
-# Networking (когда хосту нужен прокси, чтобы дотянуться до Telegram)
-PROXY_URL=socks5://127.0.0.1:1080   # SOCKS5/HTTP, пусто = прямое соединение
-TELEGRAM_API_BASE_URL=              # опционально, заменить хост Telegram API
-TELEGRAM_FILE_BASE_URL=             # опционально, заменить хост для файлов
+# Networking (Telegram заблокирован напрямую — ходим через релей)
+TELEGRAM_API_BASE_URL=https://tgproxy-plum.vercel.app/bot   # БЕЗ PROXY_URL
+TELEGRAM_FILE_BASE_URL=
 ```
 
 > 🔐 **Никогда не коммитьте настоящий токен.** В `.env` он уже добавлен в
 > `.gitignore`. Вместо него в репозиторий коммитится `.env.example` с плейсхолдером.
 
-### Прокси и обход блокировок
+### Обход блокировки Telegram (РФ) через релей
 
-Если на хосте Telegram недоступен напрямую (например, это локальная машина или
-сервер с ограничением доступа к `api.telegram.org`), укажите прокси в
-`PROXY_URL`:
+Если на хосте `api.telegram.org` недоступен напрямую (РФ-блокировка), не нужно
+никаких VPN/SOCKS/MTProto-клиентов. Бот ходит на **релей Bot API** (развёрнут
+на Vercel за пределами РФ), который проксирует `api.telegram.org`:
 
-- локальный туннель (например, tgwsproxy или VPN): `socks5://127.0.0.1:1080`
-- HTTP-прокси: `http://127.0.0.1:1080`
-- прокси с авторизацией: `socks5://user:pass@host:port`
+```dotenv
+TELEGRAM_API_BASE_URL=https://tgproxy-plum.vercel.app/bot
+```
 
-Бот создаёт `HTTPXRequest` с этим прокси и ходит через него (см.
-`services/network.py`). Когда прокси указывать не нужно — просто оставьте
-`PROXY_URL` пустым.
+URL строится как `<TELEGRAM_API_BASE_URL><TOKEN>/<method>`, поэтому значение
+обязано заканчиваться на `/bot`. Проверка доступности:
+
+```bash
+curl -s https://tgproxy-plum.vercel.app/bot<TOKEN>/getMe
+# -> {"ok":true,...}
+```
+
+Когда релей не нужен (прямой доступ к Telegram есть) — просто оставьте
+`TELEGRAM_API_BASE_URL` пустым, бот пойдёт на `api.telegram.org` напрямую.
+`services/network.py` собирает `HTTPXRequest` с таймаутами 60/70/70 с, щадящими
+медленный старт serverless-релея. Не используйте локальные SOCKS/HTTP-прокси
+(`PROXY_URL`) для этого бота — они не нужны и не помогут.
 
 > Надёжность: `main.py` оборачивает polling в цикл с ретраями. Если связь с
 > Telegram пропадёт (например, туннель временно отвалился «после 19:00»), бот не

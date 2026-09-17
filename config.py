@@ -36,6 +36,10 @@ class Config:
         # IP or a mirror you want to pin to.
         self.telegram_api_base_url: str | None = _clean_env("TELEGRAM_API_BASE_URL")
         self.telegram_file_base_url: str | None = _clean_env("TELEGRAM_FILE_BASE_URL")
+        # Comma-separated override of the Telegram API IPs to try (in order).
+        # Leave empty to use the built-in list. Useful when the system DNS returns
+        # a blocked IP and you want to pin a specific reachable endpoint.
+        self.telegram_api_ips: str | None = _clean_env("TELEGRAM_API_IPS")
 
 
 def _clean_env(name: str) -> str | None:
