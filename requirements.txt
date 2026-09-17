@@ -2,3 +2,5 @@ python-telegram-bot>=21.6,<22
 APScheduler>=3.10,<4
 python-dotenv>=1.0
 python-dateutil>=2.9
+# SOCKS5 transport for httpx (used when PROXY_URL is a socks5:// endpoint).
+socksio>=1.0
